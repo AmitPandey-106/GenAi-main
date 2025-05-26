@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1000423831815",
+    "project_id": "gen-ai-6d31a",
+    "storage_bucket": "gen-ai-6d31a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1000423831815:android:1e02a76c5308104058eda2",
+        "android_client_info": {
+          "package_name": "com.example.genai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCSW48KXCdJidaXxU5cekiVefJ2nI59hmY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
