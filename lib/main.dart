@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:genai/user_pages/signin.dart';
 import 'package:genai/head_nav.dart'; // Admin page
@@ -186,4 +188,71 @@ class GreenCurveClipper extends CustomClipper<Path> {
   }
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+Future<void> setupFCM() async {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  // Request notification permissions (important for iOS)
+  await messaging.requestPermission();
+
+  // Get the FCM device token (optional: send to server)
+  String? token = await messaging.getToken();
+  print('FCM Token: $token');
+
+  // Store token in Firebase Realtime Database
+  if (token != null) {
+    try {
+      final DatabaseReference database = FirebaseDatabase.instance.ref();
+      final tokensRef = database.child('GenAi/admin_tokens');
+
+      // Get existing tokens to check for duplicates and determine next token number
+      final DataSnapshot snapshot = await tokensRef.get();
+      int tokenCount = 0;
+      bool tokenExists = false;
+
+      if (snapshot.exists && snapshot.value is Map) {
+        Map<dynamic, dynamic> tokensMap = snapshot.value as Map;
+        tokenCount = tokensMap.length;
+
+        // Check if token already exists
+        tokenExists = tokensMap.values.contains(token);
+      }
+
+      // Only add token if it doesn't already exist
+      if (!tokenExists) {
+        // Add token with sequential numbering
+        final tokenRef = tokensRef.child('token${tokenCount + 1}');
+        await tokenRef.set(token);
+        print('Token stored successfully in Firebase database!');
+      } else {
+        print('Token already exists in database, not adding duplicate.');
+      }
+    } catch (e) {
+      print('Error storing token in Firebase: $e');
+    }
+  }
+
+  // Foreground handler
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    RemoteNotification? notification = message.notification;
+    AndroidNotification? android = message.notification?.android;
+
+    if (notification != null && android != null) {
+      var flutterLocalNotificationsPlugin;
+      flutterLocalNotificationsPlugin.show(
+        0,
+        notification.title,
+        notification.body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'message_channel',
+            'Admin Messages',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+        ),
+      );
+    }
+  });
 }

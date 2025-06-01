@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:genai/cluster_head/student_detail_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class WellnessUploads extends StatefulWidget {
@@ -157,10 +158,25 @@ class _WellnessUploadsState extends State<WellnessUploads> {
                 itemCount: studentDataList.length,
                 itemBuilder: (context, index) {
                   final student = studentDataList[index];
+
+                  final isEven = index % 2 == 0;
+
+                  final Color cardColor1 = Colors.blue.shade100;
+                  final Color cardColor2 = Colors.blue.shade50;
+
                   return Card(
+                    color: isEven ? cardColor1 : cardColor2,
                     elevation: 3,
                     margin: EdgeInsets.symmetric(vertical: 8),
                     child: ListTile(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => StudentDetailPage(studentData: student),
+                          ),
+                        );
+                      },
                       leading: student['image_url'] != null
                           ? Image.network(
                         student['image_url'],
@@ -173,19 +189,8 @@ class _WellnessUploadsState extends State<WellnessUploads> {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("College: ${student['collegeName']}, UDISE: ${student['udise']}"),
                           Text("Roll No: ${student['rollNo']}"),
-                          Text("Emotion: ${student['emotion']} | Stress: ${student['stress']}"),
-                          Text("Age: ${student['age']}, Gender: ${student['gender']}"),
-                          Text("Height: ${student['height']}, Weight: ${student['weight']}"),
-                          Text("Uploaded: ${student['ImageUploadedDate']} at ${student['ImageUploadedTime']}"),
-                        ],
-                      ),
-                      trailing: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text("Confidence: ${student['confidence']}"),
-                          Text("Stress Score: ${student['stressScore']}"),
+                          Text("Age: ${student['age']}"),
                         ],
                       ),
                     ),

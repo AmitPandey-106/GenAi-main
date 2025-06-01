@@ -151,6 +151,26 @@ class _SanitationInspectState extends State<SanitationInspect> {
             "predictionResultUrl":predictionResultUrl,
           });
 
+          final url = Uri.parse('https://notificationstuff.onrender.com/send');
+          final serv = "Food inspection";
+          final msg =
+              "User $udise has requested for $serv Service for $formattedDate";
+          final td = {'title': "🔔 Sanitation Inspection", 'body': msg};
+          try {
+            final response = await http.post(
+              url,
+              headers: {'Content-Type': 'application/json'},
+              body: json.encode(td),
+            );
+            if (response.statusCode == 200) {
+              print('Title and Body sent successfully!');
+            } else {
+              print('Failed to send Title and Body: ${response.body}');
+            }
+          } catch (e) {
+            print('Error: $e');
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Sanitization prediction saved successfully")),
           );

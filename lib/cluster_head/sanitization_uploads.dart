@@ -1,5 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:http/http.dart' as http;
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:shared_preferences/shared_preferences.dart'; // Make sure you import this!
 
 class SanitizationUploads extends StatefulWidget {
@@ -45,6 +51,85 @@ class _SanitizationUploadsState extends State<SanitizationUploads> {
       storedRole = role;
     });
   }
+
+  Future<void> generatePdf(BuildContext context, Map<String, String> report) async {
+    final pdf = pw.Document();
+
+    final Map<String, String> readableLabels = {
+      'udise': 'UDISE Code',
+      'date': 'Upload Date',
+      'time': 'Upload Time',
+      'prediction': 'Prediction',
+      'school': 'College Name',
+      'predictionUrl': 'Sanitization Image',
+    };
+
+    pw.Widget? imageWidget;
+    if (report['predictionUrl'] != null && report['predictionUrl']!.isNotEmpty) {
+      try {
+        final response = await http.get(Uri.parse(report['predictionUrl']!));
+        if (response.statusCode == 200) {
+          final image = pw.MemoryImage(response.bodyBytes);
+          imageWidget = pw.Center(
+            child: pw.Container(
+              margin: const pw.EdgeInsets.only(bottom: 20),
+              height: 150,
+              width: 150,
+              decoration: pw.BoxDecoration(
+                shape: pw.BoxShape.circle,
+                image: pw.DecorationImage(image: image, fit: pw.BoxFit.cover),
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        print("Image load failed: $e");
+      }
+    }
+
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text("Sanitization Report", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(height: 16),
+              if (imageWidget != null) imageWidget,
+              pw.Table(
+                border: pw.TableBorder.all(),
+                columnWidths: {
+                  0: const pw.FlexColumnWidth(2),
+                  1: const pw.FlexColumnWidth(3),
+                },
+                children: report.entries.where((entry) => entry.key != 'predictionUrl' && entry.key != 'report').map((entry) {
+                  final label = readableLabels[entry.key] ?? entry.key;
+                  return pw.TableRow(
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(6),
+                        child: pw.Text(label, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(6),
+                        child: pw.Text('${entry.value}'),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/sanitization_report_${report['udise']}_${report['date']}.pdf');
+    await file.writeAsBytes(await pdf.save());
+    OpenFile.open(file.path);
+  }
+
 
   Future<void> fetchSanitizationReports() async {
     DatabaseReference dbRef = FirebaseDatabase.instance.ref("GenAi").child("sanitization_detections");
@@ -179,6 +264,15 @@ class _SanitizationUploadsState extends State<SanitizationUploads> {
                                         },
                                         child: Text('Close'),
                                       ),
+                                      ElevatedButton.icon(
+                                        onPressed: () => generatePdf(context, report),
+                                        icon: const Icon(Icons.download),
+                                        label: const Text('Download Report'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      ),
+
                                     ],
                                   );
                                 },

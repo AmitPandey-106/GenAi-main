@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:genai/head_nav.dart';
 import 'package:genai/user_nav.dart';
+import '../main.dart';
 import 'change_password.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -50,6 +51,10 @@ class _SignInPageState extends State<SignInPage> {
             await prefs.setString('role', role);
             await prefs.setString('collegeName', collegeName);
             await prefs.setString('udise', udise);
+
+            if(role == "admin") {
+              await setupFCM();
+            }
 
             Navigator.pushReplacement(
               context,

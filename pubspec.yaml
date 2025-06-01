@@ -39,11 +39,17 @@ dependencies:
   firebase_auth: ^5.5.1
   shared_preferences: ^2.5.3
   permission_handler: ^11.4.0
-  firebase_messaging: ^15.2.4
+  firebase_messaging: any
   http: ^1.3.0
   geolocator: ^13.0.4
   geocoding: ^3.0.0
   carousel_slider: ^5.0.0
+  flutter_local_notifications: any
+  pdf: ^3.11.3
+  path_provider: ^2.1.5
+  open_file: ^3.5.10
+  get: ^4.7.2
+
 
 dev_dependencies:
   flutter_test:

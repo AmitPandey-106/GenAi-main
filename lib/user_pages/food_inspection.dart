@@ -190,6 +190,26 @@ class _FoodInspectState extends State<FoodInspect> {
             "total": total,
           });
 
+          final url = Uri.parse('https://notificationstuff.onrender.com/send');
+          final serv = "Food inspection";
+          final msg =
+              "User $udise has requested for $serv Service for $formattedDate";
+          final td = {'title': "🔔 Food Inspection", 'body': msg};
+          try {
+            final response = await http.post(
+              url,
+              headers: {'Content-Type': 'application/json'},
+              body: json.encode(td),
+            );
+            if (response.statusCode == 200) {
+              print('Title and Body sent successfully!');
+            } else {
+              print('Failed to send Title and Body: ${response.body}');
+            }
+          } catch (e) {
+            print('Error: $e');
+          }
+
           print("ResultOfImage: $resultText");
 
           ScaffoldMessenger.of(context).showSnackBar(

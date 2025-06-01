@@ -1,4 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ReportDetailsScreen extends StatefulWidget {
@@ -25,6 +32,130 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     setState(() {
       role = prefs.getString('role');  // Fetch the role from SharedPreferences
     });
+  }
+
+  Future<void> _downloadPDF() async {
+    final pdf = pw.Document();
+
+    final report = widget.reportData;
+    final imageUrl = report['annotated_image_url'];
+
+    pw.Widget? imageWidget;
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      try {
+        final response = await http.get(Uri.parse(imageUrl));
+        if (response.statusCode == 200) {
+          final image = pw.MemoryImage(response.bodyBytes);
+          imageWidget = pw.Center(
+            child: pw.Container(
+              margin: const pw.EdgeInsets.only(bottom: 20),
+              height: 150,
+              width: 150,
+              decoration: pw.BoxDecoration(
+                shape: pw.BoxShape.circle,
+                image: pw.DecorationImage(image: image, fit: pw.BoxFit.cover),
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        print("Image load failed: $e");
+      }
+    }
+
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) {
+          return pw.Padding(
+            padding: const pw.EdgeInsets.all(24.0),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Center(
+                  child: pw.Text(
+                    "Food Quality Report",
+                    style: pw.TextStyle(fontSize: 26, fontWeight: pw.FontWeight.bold),
+                  ),
+                ),
+                pw.SizedBox(height: 20),
+                pw.Divider(thickness: 2),
+                pw.SizedBox(height: 20),
+
+                if (imageWidget != null) imageWidget,
+
+                pw.Table(
+                  columnWidths: {
+                    0: const pw.FlexColumnWidth(3),
+                    1: const pw.FlexColumnWidth(5),
+                  },
+                  border: pw.TableBorder.all(color: PdfColors.grey600),
+                  children: [
+                    _buildTableRow("School", report['school']),
+                    _buildTableRow("UDISE", report['udise']),
+                    _buildTableRow("Date", report['date']),
+                    _buildTableRow("Time", report['time']),
+                    _buildTableRow("Image Uploaded Date", report['imageUploadedDate']),
+                    _buildTableRow("Image Uploaded Time", report['imageUploadedTime']),
+                    if (role != 'user') _buildTableRow("Food Quality", report['food_quality']),
+                  ],
+                ),
+
+                pw.SizedBox(height: 20),
+                pw.Text("Nutritional Summary", style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                pw.Container(
+                  margin: const pw.EdgeInsets.only(top: 8),
+                  padding: const pw.EdgeInsets.all(12),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.blueGrey),
+                    borderRadius: pw.BorderRadius.circular(8),
+                    color: PdfColors.grey100,
+                  ),
+                  child: pw.Text(report['nutritional_summary'] ?? '---', style: pw.TextStyle(fontSize: 14)),
+                ),
+
+                pw.SizedBox(height: 20),
+                pw.Text("Nutritional Breakdown", style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 8),
+                pw.Table(
+                  columnWidths: {
+                    0: const pw.FlexColumnWidth(3),
+                    1: const pw.FlexColumnWidth(5),
+                  },
+                  border: pw.TableBorder.all(color: PdfColors.grey600),
+                  children: [
+                    _buildTableRow("Total Carbs", report['total_carbs']),
+                    _buildTableRow("Total Protein", report['total_protein']),
+                    _buildTableRow("Total Fat", report['total_fat']),
+                    _buildTableRow("Total Calories", report['total_calories']),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/food_quality_report_${report['udise']}_${report['date']}.pdf');
+    await file.writeAsBytes(await pdf.save());
+
+    OpenFile.open(file.path);
+  }
+
+  pw.TableRow _buildTableRow(String label, dynamic value) {
+    return pw.TableRow(
+      children: [
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(8),
+          child: pw.Text(label, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.all(8),
+          child: pw.Text(value?.toString() ?? '---'),
+        ),
+      ],
+    );
   }
 
   @override
@@ -113,6 +244,19 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                   _buildReportRow("Total Calories:", widget.reportData['total_calories']?.toString() ?? "***"),
 
                   SizedBox(height: 20),
+
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: _downloadPDF,
+                      child: Text("Download Report"),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 70, vertical: 16),
+                        textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        backgroundColor: Colors.green,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 12),
 
                   Center(
                     child: ElevatedButton(
