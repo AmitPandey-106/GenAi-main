@@ -138,7 +138,7 @@ class _FoodInspectState extends State<FoodInspect> {
 
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('https://smartschool-api-production-19f9.up.railway.app'),
+      Uri.parse('https://prathamesh901-food-detection.hf.space/food/predict'),
     );
 
     request.files.add(

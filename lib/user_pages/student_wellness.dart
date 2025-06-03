@@ -168,7 +168,7 @@ class _StudentWellnessPageState extends State<StudentWellnessPage> {
 
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('https://web-production-8d4ef.up.railway.app/api/predict'),
+      Uri.parse('https://web-production-4f74.up.railway.app/api/predict'),
     );
 
     request.files.add(
